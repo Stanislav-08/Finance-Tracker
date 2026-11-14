@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { getTransactions } from "../services/accountService";
 import MoneyFlowChart from "../layouts/components/MoneyFlowChart";
@@ -20,28 +21,34 @@ function DashboardPage() {
   return (
     <div className="dashboard-page">
       <Header />
-      <div className="info-row row">
-      <TotalBalance />
-      <Income />
-      <Expenses />
-      <TotalSavings />
-      </div>
-      <div className="money-row row">
-        <div className="money-flow card">
+      <div className="grid dashboard-grid">
+        <div className="g-stat"><TotalBalance /></div>
+        <div className="g-stat"><Income /></div>
+        <div className="g-stat"><Expenses /></div>
+        <div className="g-stat"><TotalSavings /></div>
+
+        <div className="g-wide card">
           <h3>Money flow</h3>
           <MoneyFlowChart transactions={txs} />
         </div>
-        <div className="budget card">
+        <div className="g-side card">
           <h3>Budget</h3>
+          <div className="empty-state">
+            <p>No budgets set yet.</p>
+            <Link to="/budget" className="btn">Set a budget</Link>
+          </div>
         </div>
-      </div>
-      <div className="money-row row">
-        <div className="transactions card">
+
+        <div className="g-wide card">
           <h3>Transactions</h3>
           <TransactionsTable />
         </div>
-        <div className="saving-goals card">
+        <div className="g-side card">
           <h3>Saving goals</h3>
+          <div className="empty-state">
+            <p>Track what you're saving for.</p>
+            <Link to="/goals" className="btn">View goals</Link>
+          </div>
         </div>
       </div>
     </div>

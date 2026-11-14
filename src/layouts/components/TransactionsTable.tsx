@@ -59,7 +59,7 @@ export default function TransactionsTable({ full = false }: { full?: boolean }) 
           <button className="btn-ghost" onClick={exportCsv}>Export CSV</button>
         </div>
       )}
-      {shown.length === 0 ? <p>No transactions found.</p> : (
+      {shown.length === 0 ? <div className="empty-state"><p>No transactions yet.</p></div> : (
         <table>
           <thead><tr><th>Merchant</th><th>Category</th><th>Date</th><th>Amount</th>{full && <th />}</tr></thead>
           <tbody>
