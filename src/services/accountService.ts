@@ -28,7 +28,7 @@ async function request<T>(
   });
 
   if (!response.ok) {
-    throw new Error(errorMessage);
+    throw new Error(`${errorMessage} (HTTP ${response.status} from ${API_URL}${path})`);
   }
 
   return response.json();

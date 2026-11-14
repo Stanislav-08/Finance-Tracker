@@ -42,7 +42,7 @@ export default function AddTransactionForm({ onCreated }: Props) {
         if (acc[0]) setAccountId(acc[0].id);
       } catch (e) {
         console.error(e);
-        setError("Could not load accounts/categories.");
+        setError(e instanceof Error ? e.message : "Could not load accounts/categories.");
       }
     }
     load();
