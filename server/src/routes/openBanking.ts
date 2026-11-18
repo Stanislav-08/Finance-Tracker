@@ -121,16 +121,16 @@ router.post("/sync", async (req, res) => {
     const c = await creds(userId);
     const conns = await prisma.$queryRaw<{ accountUid: string; accountId: string }[]>`SELECT "accountUid","accountId" FROM "BankConnection" WHERE "userId" = ${userId}`;
     let imported = 0;
-    for (const c of conns) {
-      const bal = await eb<{ balances: any[] }>(c, `/accounts/${c.accountUid}/balances`);
+    for (const conn of conns) {
+      const bal = await eb<{ balances: any[] }>(c, `/accounts/${conn.accountUid}/balances`);
       const pick = ["CLBD", "ITBD", "XPCD", "CLAV", "ITAV"].map((t) => bal.balances.find((b) => b.balance_type === t)).find(Boolean) ?? bal.balances[0];
-      if (pick) await prisma.account.update({ where: { id: c.accountId }, data: { balance: Number(pick.balance_amount.amount) } });
+      if (pick) await prisma.account.update({ where: { id: conn.accountId }, data: { balance: Number(pick.balance_amount.amount) } });
 
       const rows: any[] = [];
       let key: string | undefined;
       for (let page = 0; page < 5; page++) {
         const t = await eb<{ transactions: any[]; continuation_key?: string }>(c, 
-          `/accounts/${c.accountUid}/transactions${key ? `?continuation_key=${encodeURIComponent(key)}` : ""}`);
+          `/accounts/${conn.accountUid}/transactions${key ? `?continuation_key=${encodeURIComponent(key)}` : ""}`);
         for (const x of t.transactions) {
           if (x.status && x.status !== "BOOK") continue;
           const income = x.credit_debit_indicator === "CRDT";
@@ -148,12 +148,12 @@ router.post("/sync", async (req, res) => {
       const valid = rows.filter((r) => r.d);
       if (valid.length) {
         const n = await prisma.$executeRaw`INSERT INTO "Transaction" ("userId","accountId","amount","type","merchant","description","date","externalId")
-          SELECT ${userId}, ${c.accountId}, x.amount, x.type, x.merchant, x.descr, x.d::timestamp, x.ext
+          SELECT ${userId}, ${conn.accountId}, x.amount, x.type, x.merchant, x.descr, x.d::timestamp, x.ext
           FROM jsonb_to_recordset(${JSON.stringify(valid)}::jsonb) AS x(ext text, amount numeric, type text, merchant text, descr text, d text)
           ON CONFLICT ("accountId","externalId") DO NOTHING`;
         imported += Number(n);
       }
-      await prisma.$executeRaw`UPDATE "BankConnection" SET "lastSyncedAt" = now() WHERE "accountUid" = ${c.accountUid} AND "userId" = ${userId}`;
+      await prisma.$executeRaw`UPDATE "BankConnection" SET "lastSyncedAt" = now() WHERE "accountUid" = ${conn.accountUid} AND "userId" = ${userId}`;
     }
     res.json({ imported });
   } catch (e) { fail(res, e); }
