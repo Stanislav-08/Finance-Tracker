@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth.middleware.js";
-import { eb } from "../lib/enableBanking.js";
+import { eb, normalizePem } from "../lib/enableBanking.js";
 import { decrypt, encrypt } from "../lib/crypto.js";
 import prisma from "../lib/prisma.js";
 
@@ -29,8 +29,11 @@ router.get("/credentials", async (req, res) => {
 router.put("/credentials", async (req, res) => {
   try {
     const appId = String(req.body.appId ?? "").trim();
-    const privateKey = String(req.body.privateKey ?? "").trim();
-    if (!appId || !privateKey) return res.status(400).json({ error: "appId and privateKey required" });
+    const rawKey = String(req.body.privateKey ?? "").trim();
+    if (!appId || !rawKey) return res.status(400).json({ error: "appId and privateKey required" });
+    let privateKey: string;
+    try { privateKey = normalizePem(rawKey); }
+    catch (e) { return res.status(400).json({ error: e instanceof Error ? e.message : "Invalid private key" }); }
     try { await eb(c0(appId, privateKey), "/aspsps?country=FI"); }
     catch (e) { return res.status(400).json({ error: `Credentials rejected: ${e instanceof Error ? e.message : e}` }); }
     const enc = encrypt(privateKey);
