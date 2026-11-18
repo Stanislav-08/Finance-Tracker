@@ -258,3 +258,21 @@ export async function deleteSubscription(userId: string, id: string) {
   const r = await prisma.subscription.deleteMany({ where: { id, userId } });
   return r.count > 0;
 }
+
+export async function setAccountBalance(userId: string, accountId: string, balance: number) {
+  const r = await prisma.account.updateMany({ where: { id: accountId, userId }, data: { balance } });
+  return r.count > 0;
+}
+
+export async function transferBetweenAccounts(userId: string, fromId: string, toId: string, amount: number) {
+  return prisma.$transaction(async (tx) => {
+    const accs = await tx.account.findMany({ where: { userId, id: { in: [fromId, toId] } } });
+    const from = accs.find((a) => a.id === fromId);
+    const to = accs.find((a) => a.id === toId);
+    if (!from || !to || fromId === toId) return "NOT_FOUND";
+    if (from.currency !== to.currency) return "CURRENCY";
+    await tx.account.update({ where: { id: fromId }, data: { balance: { decrement: amount } } });
+    await tx.account.update({ where: { id: toId }, data: { balance: { increment: amount } } });
+    return "OK";
+  });
+}

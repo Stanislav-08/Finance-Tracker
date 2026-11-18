@@ -268,3 +268,13 @@ CREATE TABLE IF NOT EXISTS "BankConnection" (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "BankConnection_uid_key" ON "BankConnection"("userId","accountUid");
 ALTER TABLE "BankConnection" ENABLE ROW LEVEL SECURITY;  -- no policies: only the server can access it
+
+-- Each user's own Enable Banking credentials (private key is stored AES-encrypted by the server)
+CREATE TABLE IF NOT EXISTS "BankCredential" (
+  "userId"     TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+  "appId"      TEXT NOT NULL,
+  "privateKey" TEXT NOT NULL,
+  "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "BankCredential_pkey" PRIMARY KEY ("userId")
+);
+ALTER TABLE "BankCredential" ENABLE ROW LEVEL SECURITY;  -- no policies: server only

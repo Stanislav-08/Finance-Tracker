@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth.middleware.js";
 import { eb } from "../lib/enableBanking.js";
+import { decrypt, encrypt } from "../lib/crypto.js";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
@@ -11,11 +12,49 @@ const fail = (res: any, e: unknown) => {
   res.status(500).json({ error: e instanceof Error ? e.message : "Open banking error" });
 };
 
+async function creds(userId: string) {
+  const r = await prisma.$queryRaw<{ appId: string; privateKey: string }[]>`SELECT "appId","privateKey" FROM "BankCredential" WHERE "userId" = ${userId}`;
+  const row = r[0];
+  if (!row) throw new Error("Add your Enable Banking credentials first");
+  return { appId: row.appId, privateKey: decrypt(row.privateKey) };
+}
+
+router.get("/credentials", async (req, res) => {
+  try {
+    const r = await prisma.$queryRaw<{ appId: string }[]>`SELECT "appId" FROM "BankCredential" WHERE "userId" = ${uid(req)}`;
+    res.json({ configured: r.length > 0, appId: r[0]?.appId ?? null });
+  } catch (e) { fail(res, e); }
+});
+
+router.put("/credentials", async (req, res) => {
+  try {
+    const appId = String(req.body.appId ?? "").trim();
+    const privateKey = String(req.body.privateKey ?? "").trim();
+    if (!appId || !privateKey) return res.status(400).json({ error: "appId and privateKey required" });
+    try { await eb(c0(appId, privateKey), "/aspsps?country=FI"); }
+    catch (e) { return res.status(400).json({ error: `Credentials rejected: ${e instanceof Error ? e.message : e}` }); }
+    const enc = encrypt(privateKey);
+    await prisma.$executeRaw`INSERT INTO "BankCredential" ("userId","appId","privateKey") VALUES (${uid(req)}, ${appId}, ${enc})
+      ON CONFLICT ("userId") DO UPDATE SET "appId" = ${appId}, "privateKey" = ${enc}`;
+    res.json({ configured: true, appId });
+  } catch (e) { fail(res, e); }
+});
+
+router.delete("/credentials", async (req, res) => {
+  try {
+    await prisma.$executeRaw`DELETE FROM "BankCredential" WHERE "userId" = ${uid(req)}`;
+    res.json({ configured: false });
+  } catch (e) { fail(res, e); }
+});
+
+const c0 = (appId: string, privateKey: string) => ({ appId, privateKey });
+
 // 1. List banks for a country
 router.get("/banks", async (req, res) => {
   try {
+    const c = await creds(uid(req));
     const country = String(req.query.country || "BG").toUpperCase();
-    const data = await eb<{ aspsps: { name: string; country: string }[] }>(`/aspsps?country=${country}`);
+    const data = await eb<{ aspsps: { name: string; country: string }[] }>(c, `/aspsps?country=${country}`);
     res.json({ banks: data.aspsps.map((b) => ({ name: b.name, country: b.country })) });
   } catch (e) { fail(res, e); }
 });
@@ -23,10 +62,11 @@ router.get("/banks", async (req, res) => {
 // 2. Start authorization -> returns the bank login URL
 router.post("/connect", async (req, res) => {
   try {
+    const c = await creds(uid(req));
     const { bank, country, state } = req.body;
     if (!bank || !country || !state) return res.status(400).json({ error: "bank, country, state required" });
     const base = (process.env.CLIENT_ORIGIN ?? "http://localhost:5173").split(",")[0]?.trim().replace(/\/+$/, "") ?? "http://localhost:5173";
-    const data = await eb<{ url: string }>("/auth", {
+    const data = await eb<{ url: string }>(c, "/auth", {
       method: "POST",
       body: {
         access: { balances: true, transactions: true, valid_until: new Date(Date.now() + 85 * 864e5).toISOString() },
@@ -44,9 +84,10 @@ router.post("/connect", async (req, res) => {
 router.post("/session", async (req, res) => {
   try {
     const userId = uid(req);
+    const c = await creds(userId);
     const { code, bank, country } = req.body;
     if (!code) return res.status(400).json({ error: "code required" });
-    const s = await eb<{ session_id: string; aspsp?: { name: string; country: string }; accounts: any[] }>("/sessions", {
+    const s = await eb<{ session_id: string; aspsp?: { name: string; country: string }; accounts: any[] }>(c, "/sessions", {
       method: "POST", body: { code },
     });
     for (const a of s.accounts) {
@@ -77,17 +118,18 @@ router.get("/connections", async (req, res) => {
 router.post("/sync", async (req, res) => {
   try {
     const userId = uid(req);
+    const c = await creds(userId);
     const conns = await prisma.$queryRaw<{ accountUid: string; accountId: string }[]>`SELECT "accountUid","accountId" FROM "BankConnection" WHERE "userId" = ${userId}`;
     let imported = 0;
     for (const c of conns) {
-      const bal = await eb<{ balances: any[] }>(`/accounts/${c.accountUid}/balances`);
+      const bal = await eb<{ balances: any[] }>(c, `/accounts/${c.accountUid}/balances`);
       const pick = ["CLBD", "ITBD", "XPCD", "CLAV", "ITAV"].map((t) => bal.balances.find((b) => b.balance_type === t)).find(Boolean) ?? bal.balances[0];
       if (pick) await prisma.account.update({ where: { id: c.accountId }, data: { balance: Number(pick.balance_amount.amount) } });
 
       const rows: any[] = [];
       let key: string | undefined;
       for (let page = 0; page < 5; page++) {
-        const t = await eb<{ transactions: any[]; continuation_key?: string }>(
+        const t = await eb<{ transactions: any[]; continuation_key?: string }>(c, 
           `/accounts/${c.accountUid}/transactions${key ? `?continuation_key=${encodeURIComponent(key)}` : ""}`);
         for (const x of t.transactions) {
           if (x.status && x.status !== "BOOK") continue;

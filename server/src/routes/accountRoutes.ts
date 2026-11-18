@@ -23,6 +23,8 @@ import {
   getSubscriptions,
   createSubscription,
   deleteSubscription,
+  setAccountBalance,
+  transferBetweenAccounts,
 } from "../services/account/accountService.js";
 
 const router = Router();
@@ -305,6 +307,26 @@ router.delete("/subscriptions/:userId/:id", async (req, res) => {
     const ok = await deleteSubscription(req.params.userId, req.params.id);
     ok ? res.json({ success: true }) : res.status(404).json({ error: "Not found" });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to delete subscription" }); }
+});
+
+router.put("/accounts/:userId/:accountId/balance", async (req, res) => {
+  try {
+    const balance = Number(req.body.balance);
+    if (!Number.isFinite(balance)) return res.status(400).json({ error: "balance must be a number" });
+    const ok = await setAccountBalance(req.params.userId, req.params.accountId, balance);
+    ok ? res.json({ success: true }) : res.status(404).json({ error: "Account not found" });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to update balance" }); }
+});
+
+router.post("/transfers/:userId", async (req, res) => {
+  try {
+    const amount = Number(req.body.amount);
+    if (!req.body.fromId || !req.body.toId || !(amount > 0)) return res.status(400).json({ error: "fromId, toId and positive amount required" });
+    const r = await transferBetweenAccounts(req.params.userId, req.body.fromId, req.body.toId, amount);
+    if (r === "CURRENCY") return res.status(400).json({ error: "Accounts must use the same currency" });
+    if (r !== "OK") return res.status(404).json({ error: "Account not found" });
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: "Failed to transfer" }); }
 });
 
 export default router;

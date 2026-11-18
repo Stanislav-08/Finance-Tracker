@@ -28,7 +28,13 @@ async function request<T>(
   });
 
   if (!response.ok) {
-    throw new Error(`${errorMessage} (HTTP ${response.status} from ${API_URL}${path})`);
+    let detail = "";
+    try {
+      detail = (await response.json()).error ?? "";
+    } catch {
+      /* response had no JSON body */
+    }
+    throw new Error(`${errorMessage} (HTTP ${response.status})${detail ? ": " + detail : ""}`);
   }
 
   return response.json();
@@ -206,3 +212,18 @@ export const getBankConnections = async () =>
 
 export const syncBanks = () =>
   request<{ imported: number }>("/api/open-banking/sync", "Failed to sync", { method: "POST", body: "{}" });
+
+export const getBankCredentials = () =>
+  request<{ configured: boolean; appId: string | null }>("/api/open-banking/credentials", "Failed to load credentials");
+
+export const saveBankCredentials = (appId: string, privateKey: string) =>
+  request("/api/open-banking/credentials", "Failed to save credentials", { method: "PUT", body: JSON.stringify({ appId, privateKey }) });
+
+export const removeBankCredentials = () =>
+  request("/api/open-banking/credentials", "Failed to remove credentials", { method: "DELETE" });
+
+export const setAccountBalance = (userId: string, accountId: string, balance: number) =>
+  request(`/api/accounts/accounts/${userId}/${accountId}/balance`, "Failed to update balance", { method: "PUT", body: JSON.stringify({ balance }) });
+
+export const transfer = (userId: string, fromId: string, toId: string, amount: number) =>
+  request(`/api/accounts/transfers/${userId}`, "Failed to transfer", { method: "POST", body: JSON.stringify({ fromId, toId, amount }) });
