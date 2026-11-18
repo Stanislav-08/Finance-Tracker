@@ -6,7 +6,7 @@ import "./Sidebar.css";
 const links = [
   ["/dashboard", "Dashboard", "dashboard"], ["/transactions", "Transactions", "transactions"],
   ["/wallet", "Wallet", "wallet"], ["/goals", "Goals", "goals"], ["/budget", "Budget", "budget"],
-  ["/subscriptions", "Subscriptions", "calendar"], ["/analytics", "Analytics", "analytics"], ["/settings", "Settings", "settings"],
+  ["/bank", "Bank sync", "wallet"], ["/subscriptions", "Subscriptions", "calendar"], ["/analytics", "Analytics", "analytics"], ["/settings", "Settings", "settings"],
 ];
 
 export default function Sidebar() {

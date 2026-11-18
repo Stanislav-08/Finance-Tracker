@@ -249,3 +249,22 @@ DROP POLICY IF EXISTS "read categories"         ON "Category";
 DROP POLICY IF EXISTS "read savings categories" ON "SavingsCategory";
 CREATE POLICY "read categories"         ON "Category"        FOR SELECT TO authenticated USING (true);
 CREATE POLICY "read savings categories" ON "SavingsCategory" FOR SELECT TO authenticated USING (true);
+
+-- ---------- OPEN BANKING (Enable Banking) ----------
+ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "externalId" TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS "Transaction_account_external_key" ON "Transaction"("accountId","externalId");
+
+CREATE TABLE IF NOT EXISTS "BankConnection" (
+  "id"           TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+  "userId"       TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+  "accountId"    TEXT NOT NULL REFERENCES "Account"("id") ON DELETE CASCADE,
+  "aspspName"    TEXT NOT NULL,
+  "country"      TEXT NOT NULL,
+  "sessionId"    TEXT NOT NULL,
+  "accountUid"   TEXT NOT NULL,
+  "lastSyncedAt" TIMESTAMP(3),
+  "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "BankConnection_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "BankConnection_uid_key" ON "BankConnection"("userId","accountUid");
+ALTER TABLE "BankConnection" ENABLE ROW LEVEL SECURITY;  -- no policies: only the server can access it

@@ -11,6 +11,8 @@ import GoalsPage from "./pages/GoalsPage";
 import BudgetPage from "./pages/BudgetPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import BankPage from "./pages/BankPage";
+import BankCallbackPage from "./pages/BankCallbackPage";
 import SettingsPage from "./pages/SettingsPage";
 import AddGoalPage from "./pages/AddGoalPage";
 import AllGoalsPage from "./pages/AllGoalsPage";
@@ -44,6 +46,8 @@ export default function App() {
             <Route path="/budget" element={<BudgetPage />} />
             <Route path="/subscriptions" element={<SubscriptionsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/bank" element={<BankPage />} />
+            <Route path="/bank/callback" element={<BankCallbackPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>

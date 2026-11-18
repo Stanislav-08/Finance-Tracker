@@ -189,3 +189,20 @@ export async function createSubscription(userId: string, body: { name: string; a
 export async function deleteSubscription(userId: string, id: string) {
   await request(`/api/accounts/subscriptions/${userId}/${id}`, "Failed to delete subscription", { method: "DELETE" });
 }
+
+export const getBanks = async (country: string) =>
+  (await request<{ banks: { name: string; country: string }[] }>(`/api/open-banking/banks?country=${country}`, "Failed to load banks")).banks;
+
+export const startBankConnect = async (bank: string, country: string, state: string) =>
+  (await request<{ url: string }>("/api/open-banking/connect", "Failed to start bank connection",
+    { method: "POST", body: JSON.stringify({ bank, country, state }) })).url;
+
+export const finishBankSession = (code: string, bank: string, country: string) =>
+  request<{ connected: number }>("/api/open-banking/session", "Failed to finish bank connection",
+    { method: "POST", body: JSON.stringify({ code, bank, country }) });
+
+export const getBankConnections = async () =>
+  (await request<{ connections: any[] }>("/api/open-banking/connections", "Failed to load connections")).connections;
+
+export const syncBanks = () =>
+  request<{ imported: number }>("/api/open-banking/sync", "Failed to sync", { method: "POST", body: "{}" });
