@@ -18,11 +18,12 @@ async function appToken() {
 }
 
 export async function eb<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
-  const res = await fetch(BASE + path, {
+  const options: RequestInit = {
     method: init.method ?? "GET",
     headers: { Authorization: `Bearer ${await appToken()}`, "Content-Type": "application/json" },
-    body: init.body ? JSON.stringify(init.body) : undefined,
-  });
+  };
+  if (init.body) options.body = JSON.stringify(init.body);
+  const res = await fetch(BASE + path, options);
   if (!res.ok) throw new Error(`Enable Banking ${res.status}: ${await res.text()}`);
   return res.json() as Promise<T>;
 }

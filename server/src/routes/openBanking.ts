@@ -25,7 +25,7 @@ router.post("/connect", async (req, res) => {
   try {
     const { bank, country, state } = req.body;
     if (!bank || !country || !state) return res.status(400).json({ error: "bank, country, state required" });
-    const base = (process.env.CLIENT_ORIGIN ?? "http://localhost:5173").split(",")[0].trim().replace(/\/+$/, "");
+    const base = (process.env.CLIENT_ORIGIN ?? "http://localhost:5173").split(",")[0]?.trim().replace(/\/+$/, "") ?? "http://localhost:5173";
     const data = await eb<{ url: string }>("/auth", {
       method: "POST",
       body: {
