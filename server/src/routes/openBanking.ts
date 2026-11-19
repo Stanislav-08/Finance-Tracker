@@ -73,6 +73,15 @@ router.delete("/credentials", async (req, res) => {
 
 const c0 = (appId: string, privateKey: string) => ({ appId, privateKey });
 
+/** Bank data goes into the user's main account (the one flagged isMain). Created if missing. */
+async function mainAccountId(userId: string) {
+  const r = await prisma.$queryRaw<{ id: string }[]>`SELECT "id" FROM "Account" WHERE "userId" = ${userId} AND "isMain" = true LIMIT 1`;
+  if (r[0]) return r[0].id;
+  const acc = await prisma.account.create({ data: { userId, name: "Main account", currency: "EUR", balance: 0 } });
+  await prisma.$executeRaw`UPDATE "Account" SET "isMain" = true WHERE "id" = ${acc.id}`;
+  return acc.id;
+}
+
 // 1. List banks for a country
 router.get("/banks", async (req, res) => {
   try {
@@ -109,22 +118,28 @@ router.post("/session", async (req, res) => {
   try {
     const userId = uid(req);
     const c = await creds(userId);
-    const { code, bank, country } = req.body;
+    const { code, bank, country, target } = req.body;
     if (!code) return res.status(400).json({ error: "code required" });
     const s = await eb<{ session_id: string; aspsp?: { name: string; country: string }; accounts: any[] }>(c, "/sessions", {
       method: "POST", body: { code },
     });
+    // target "main": feed the main account (default). target "new": create a separate account per bank account.
+    const mainId = target === "new" ? null : await mainAccountId(userId);
     for (const a of s.accounts) {
       const accountUid = a.uid;
       if (!accountUid) continue;
       const iban: string = a.account_id?.iban ?? a.account_id?.other?.identification ?? "";
       const bankName = s.aspsp?.name ?? bank ?? "Bank";
-      const name = `${bankName}${iban ? " …" + iban.slice(-4) : ""}`;
+      const label = `${bankName}${iban ? " …" + iban.slice(-4) : ""}`;
       const exists = await prisma.$queryRaw<{ id: string }[]>`SELECT "id" FROM "BankConnection" WHERE "accountUid" = ${accountUid} AND "userId" = ${userId}`;
       if (exists.length) continue;
-      const acc = await prisma.account.create({ data: { userId, name, currency: a.currency || "EUR", balance: 0 } });
-      await prisma.$executeRaw`INSERT INTO "BankConnection" ("userId","aspspName","country","sessionId","accountUid","accountId")
-        VALUES (${userId}, ${bankName}, ${s.aspsp?.country ?? country ?? ""}, ${s.session_id}, ${accountUid}, ${acc.id})`;
+      let accountId: string | null = mainId;
+      if (!accountId) {
+        const acc = await prisma.account.create({ data: { userId, name: label, currency: a.currency || "EUR", balance: 0 } });
+        accountId = acc.id;
+      }
+      await prisma.$executeRaw`INSERT INTO "BankConnection" ("userId","aspspName","country","sessionId","accountUid","accountId","label")
+        VALUES (${userId}, ${bankName}, ${s.aspsp?.country ?? country ?? ""}, ${s.session_id}, ${accountUid}, ${accountId}, ${label})`;
     }
     res.json({ connected: s.accounts.length });
   } catch (e) { fail(res, e); }
@@ -132,7 +147,7 @@ router.post("/session", async (req, res) => {
 
 router.get("/connections", async (req, res) => {
   try {
-    const connections = await prisma.$queryRaw`SELECT c."id", c."aspspName", c."lastSyncedAt", a."name", a."balance", a."currency"
+    const connections = await prisma.$queryRaw`SELECT c."id", c."aspspName", c."lastSyncedAt", COALESCE(c."label", a."name") AS "name", c."balance", a."currency"
       FROM "BankConnection" c JOIN "Account" a ON a."id" = c."accountId" WHERE c."userId" = ${uid(req)} ORDER BY c."createdAt"`;
     res.json({ connections });
   } catch (e) { fail(res, e); }
@@ -150,12 +165,18 @@ const MANUAL_PER_DAY = 2; // the other 2 of a typical 4-per-day bank quota are k
 
 async function syncConnection(
   c: EbCredentials, userId: string,
-  conn: { accountUid: string; accountId: string },
+  conn: { accountUid: string; accountId: string; bankBalance: unknown },
   psu: Record<string, string>
 ) {
   const bal = await eb<{ balances: any[] }>(c, `/accounts/${conn.accountUid}/balances`, { headers: psu });
   const pick = ["CLBD", "ITBD", "XPCD", "CLAV", "ITAV"].map((t) => bal.balances.find((b) => b.balance_type === t)).find(Boolean) ?? bal.balances[0];
-  if (pick) await prisma.account.update({ where: { id: conn.accountId }, data: { balance: Number(pick.balance_amount.amount) } });
+  if (pick) {
+    // Several bank accounts feed one main account, so apply only the CHANGE since the last sync.
+    const next = Number(pick.balance_amount.amount);
+    const delta = next - Number(conn.bankBalance ?? 0);
+    await prisma.account.update({ where: { id: conn.accountId }, data: { balance: { increment: delta } } });
+    await prisma.$executeRaw`UPDATE "BankConnection" SET "balance" = ${next} WHERE "accountUid" = ${conn.accountUid} AND "userId" = ${userId}`;
+  }
 
   const rows: any[] = [];
   let key: string | undefined;
@@ -192,7 +213,7 @@ async function syncConnection(
 /** Syncs every connection of one user. A bank that is over its limit is skipped, not fatal. */
 export async function syncUser(userId: string, mode: "manual" | "auto", psu: Record<string, string> = {}) {
   const c = await creds(userId);
-  const conns = await prisma.$queryRaw<{ accountUid: string; accountId: string; name: string }[]>`SELECT c."accountUid", c."accountId", a."name"
+  const conns = await prisma.$queryRaw<{ accountUid: string; accountId: string; name: string; bankBalance: unknown }[]>`SELECT c."accountUid", c."accountId", COALESCE(c."label", a."name") AS "name", c."balance" AS "bankBalance"
     FROM "BankConnection" c JOIN "Account" a ON a."id" = c."accountId" WHERE c."userId" = ${userId}`;
   const results: ConnResult[] = [];
   for (const conn of conns) {

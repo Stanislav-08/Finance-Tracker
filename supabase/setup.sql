@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS "Account" (
   CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
 );
 
+-- Marks the account that bank connections feed into (one per user)
+ALTER TABLE "Account" ADD COLUMN IF NOT EXISTS "isMain" BOOLEAN NOT NULL DEFAULT false;
+
 CREATE TABLE IF NOT EXISTS "Category" (
   "id"   TEXT NOT NULL DEFAULT gen_random_uuid()::text,
   "name" TEXT NOT NULL,
@@ -174,8 +177,8 @@ BEGIN
   VALUES (NEW.id::text, NEW.email, uname)
   ON CONFLICT ("id") DO NOTHING;
 
-  INSERT INTO "Account" ("userId","name","currency","balance")
-  VALUES (NEW.id::text, 'Main account', 'EUR', 0);
+  INSERT INTO "Account" ("userId","name","currency","balance","isMain")
+  VALUES (NEW.id::text, 'Main account', 'EUR', 0, true);
 
   RETURN NEW;
 END;
@@ -212,8 +215,8 @@ SELECT u.id::text, u.email,
 FROM auth.users u
 ON CONFLICT ("id") DO NOTHING;
 
-INSERT INTO "Account" ("userId","name","currency","balance")
-SELECT u."id", 'Main account', 'EUR', 0 FROM "User" u
+INSERT INTO "Account" ("userId","name","currency","balance","isMain")
+SELECT u."id", 'Main account', 'EUR', 0, true FROM "User" u
 WHERE NOT EXISTS (SELECT 1 FROM "Account" a WHERE a."userId" = u."id");
 
 -- ---------- ROW LEVEL SECURITY ----------
@@ -290,3 +293,12 @@ CREATE TABLE IF NOT EXISTS "BankSyncLog" (
 );
 CREATE INDEX IF NOT EXISTS "BankSyncLog_account_idx" ON "BankSyncLog"("accountUid","createdAt");
 ALTER TABLE "BankSyncLog" ENABLE ROW LEVEL SECURITY;  -- server only
+
+-- ---------- MAIN ACCOUNT: everything from banks goes into it ----------
+UPDATE "Account" a SET "isMain" = true
+WHERE a."id" = (SELECT x."id" FROM "Account" x WHERE x."userId" = a."userId" ORDER BY (x."name" = 'Main account') DESC, x."id" LIMIT 1)
+  AND NOT EXISTS (SELECT 1 FROM "Account" y WHERE y."userId" = a."userId" AND y."isMain");
+CREATE UNIQUE INDEX IF NOT EXISTS "Account_one_main_per_user" ON "Account"("userId") WHERE "isMain";
+
+ALTER TABLE "BankConnection" ADD COLUMN IF NOT EXISTS "balance" NUMERIC(65,30) NOT NULL DEFAULT 0;
+ALTER TABLE "BankConnection" ADD COLUMN IF NOT EXISTS "label"   TEXT;

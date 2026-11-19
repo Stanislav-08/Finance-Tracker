@@ -17,7 +17,7 @@ export default function BankCallbackPage() {
         const code = params.get("code");
         if (params.get("error") || !code) throw new Error(params.get("error") || "No authorization code returned");
         if (flow.state && params.get("state") !== flow.state) throw new Error("State mismatch, please try again");
-        await finishBankSession(code, flow.bank, flow.country);
+        await finishBankSession(code, flow.bank, flow.country, flow.target === "new" ? "new" : "main");
         setMsg("Importing balances and transactions…");
         await syncBanks();
         sessionStorage.removeItem("bank_flow");

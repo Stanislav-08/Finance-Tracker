@@ -203,9 +203,9 @@ export const startBankConnect = async (bank: string, country: string, state: str
   (await request<{ url: string }>("/api/open-banking/connect", "Failed to start bank connection",
     { method: "POST", body: JSON.stringify({ bank, country, state }) })).url;
 
-export const finishBankSession = (code: string, bank: string, country: string) =>
+export const finishBankSession = (code: string, bank: string, country: string, target: "main" | "new") =>
   request<{ connected: number }>("/api/open-banking/session", "Failed to finish bank connection",
-    { method: "POST", body: JSON.stringify({ code, bank, country }) });
+    { method: "POST", body: JSON.stringify({ code, bank, country, target }) });
 
 export const getBankConnections = async () =>
   (await request<{ connections: any[] }>("/api/open-banking/connections", "Failed to load connections")).connections;

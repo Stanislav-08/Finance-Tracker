@@ -10,6 +10,7 @@ export default function BankPage() {
   const [country, setCountry] = useState("BG");
   const [banks, setBanks] = useState<{ name: string; country: string }[]>([]);
   const [bank, setBank] = useState("");
+  const [target, setTarget] = useState<"main" | "new">("main");
   const [conns, setConns] = useState<any[] | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,7 +51,7 @@ export default function BankPage() {
     try {
       setBusy(true);
       const state = crypto.randomUUID();
-      sessionStorage.setItem("bank_flow", JSON.stringify({ state, bank, country }));
+      sessionStorage.setItem("bank_flow", JSON.stringify({ state, bank, country, target }));
       window.location.href = await startBankConnect(bank, country, state);
     } catch (e: any) { setMsg(e.message); setBusy(false); }
   }
@@ -93,6 +94,13 @@ export default function BankPage() {
     <div className="card" style={{ marginBottom: 16 }}>
       <h3>{conns.length ? "Add another bank" : "Connect your bank"}</h3>
       <p style={{ color: "var(--muted)", marginTop: 0 }}>You'll be redirected to Enable Banking and your bank to approve read-only access.</p>
+      <div className="form-group" style={{ marginBottom: 12 }}>
+        <label>Where should this bank's money go?</label>
+        <select value={target} onChange={(e) => setTarget(e.target.value as "main" | "new")}>
+          <option value="main">Add it to my main account</option>
+          <option value="new">Create a new account for it</option>
+        </select>
+      </div>
       <div className="toolbar">
         <select value={country} onChange={(e) => setCountry(e.target.value)}>
           {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
