@@ -62,3 +62,5 @@ button{font:inherit;cursor:pointer}.auth-button,.finish-button,.add-goal,.btn{ba
   table{font-size:.85rem}th,td{padding:8px 4px}
   .header-row{flex-direction:column;align-items:flex-start;gap:10px}
 }
+.toolbar input[type=checkbox]{flex:none;min-width:0;width:auto;margin:0}
+.toolbar label{display:flex;gap:6px;align-items:center;white-space:nowrap}

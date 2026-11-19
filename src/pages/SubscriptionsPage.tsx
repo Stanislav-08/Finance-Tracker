@@ -47,7 +47,7 @@ export default function SubscriptionsPage() {
         <select value={f.billingCycle} onChange={(e) => setF({ ...f, billingCycle: e.target.value })}><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
         <input type="date" value={f.nextPaymentDate} onChange={(e) => setF({ ...f, nextPaymentDate: e.target.value })} required />
         <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input type="checkbox" style={{ width: "auto" }} checked={f.trial} onChange={(e) => setF({ ...f, trial: e.target.checked })} /> Free trial
+          <input type="checkbox" style={{ width: "auto", flex: "none", minWidth: 0 }} checked={f.trial} onChange={(e) => setF({ ...f, trial: e.target.checked })} /> Free trial
         </label>
         <button className="btn" type="submit">Add</button>
         {f.trial && <small style={{ width: "100%", color: "var(--muted)" }}>Enter the price you'll pay after the trial. The date is when the trial ends and the first payment is charged.</small>}
