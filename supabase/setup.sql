@@ -278,3 +278,15 @@ CREATE TABLE IF NOT EXISTS "BankCredential" (
   CONSTRAINT "BankCredential_pkey" PRIMARY KEY ("userId")
 );
 ALTER TABLE "BankCredential" ENABLE ROW LEVEL SECURITY;  -- no policies: server only
+
+-- Sync log: used to keep 2 of the typical 4 daily bank fetches for the automated syncs
+CREATE TABLE IF NOT EXISTS "BankSyncLog" (
+  "id"         TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+  "userId"     TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+  "accountUid" TEXT NOT NULL,
+  "kind"       TEXT NOT NULL,
+  "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "BankSyncLog_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "BankSyncLog_account_idx" ON "BankSyncLog"("accountUid","createdAt");
+ALTER TABLE "BankSyncLog" ENABLE ROW LEVEL SECURITY;  -- server only

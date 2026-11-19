@@ -35,11 +35,11 @@ async function appToken(c: EbCredentials) {
 export async function eb<T>(
   c: EbCredentials,
   path: string,
-  init: { method?: string; body?: unknown } = {}
+  init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}
 ): Promise<T> {
   const options: RequestInit = {
     method: init.method ?? "GET",
-    headers: { Authorization: `Bearer ${await appToken(c)}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${await appToken(c)}`, "Content-Type": "application/json", ...(init.headers ?? {}) },
   };
   if (init.body) options.body = JSON.stringify(init.body);
   const res = await fetch(BASE + path, options);

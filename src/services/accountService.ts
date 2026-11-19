@@ -211,10 +211,10 @@ export const getBankConnections = async () =>
   (await request<{ connections: any[] }>("/api/open-banking/connections", "Failed to load connections")).connections;
 
 export const syncBanks = () =>
-  request<{ imported: number }>("/api/open-banking/sync", "Failed to sync", { method: "POST", body: "{}" });
+  request<{ imported: number; results: { name: string; status: string; imported: number; message?: string }[] }>("/api/open-banking/sync", "Failed to sync", { method: "POST", body: "{}" });
 
 export const getBankCredentials = () =>
-  request<{ configured: boolean; appId: string | null }>("/api/open-banking/credentials", "Failed to load credentials");
+  request<{ configured: boolean; source: "own" | "shared" | null; appId: string | null }>("/api/open-banking/credentials", "Failed to load credentials");
 
 export const saveBankCredentials = (appId: string, privateKey: string) =>
   request("/api/open-banking/credentials", "Failed to save credentials", { method: "PUT", body: JSON.stringify({ appId, privateKey }) });
