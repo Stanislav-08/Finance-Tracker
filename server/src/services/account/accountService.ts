@@ -249,9 +249,9 @@ export async function getSubscriptions(userId: string) {
 }
 
 export async function createSubscription(userId: string, d: {
-  name: string; amount: number; currency: string; billingCycle: string; nextPaymentDate: Date;
+  name: string; amount: number; currency: string; billingCycle: string; nextPaymentDate: Date; status: string;
 }) {
-  return prisma.subscription.create({ data: { userId, status: "active", ...d } });
+  return prisma.subscription.create({ data: { userId, ...d } });
 }
 
 export async function deleteSubscription(userId: string, id: string) {

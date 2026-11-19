@@ -297,6 +297,7 @@ router.post("/subscriptions/:userId", async (req, res) => {
       return res.status(400).json({ error: "name, amount, billingCycle, nextPaymentDate required" });
     const subscription = await createSubscription(req.params.userId, {
       name, amount, currency: req.body.currency || "EUR", billingCycle, nextPaymentDate: new Date(nextPaymentDate),
+      status: req.body.status === "trial" ? "trial" : "active",
     });
     res.status(201).json({ subscription });
   } catch (e) { console.error(e); res.status(500).json({ error: "Failed to create subscription" }); }

@@ -188,7 +188,7 @@ export async function getSubscriptions(userId: string) {
   return (await request<{ subscriptions: any[] }>(`/api/accounts/subscriptions/${userId}`, "Failed to fetch subscriptions")).subscriptions;
 }
 
-export async function createSubscription(userId: string, body: { name: string; amount: number; billingCycle: string; nextPaymentDate: string }) {
+export async function createSubscription(userId: string, body: { name: string; amount: number; billingCycle: string; nextPaymentDate: string; status?: string }) {
   await request(`/api/accounts/subscriptions/${userId}`, "Failed to create subscription", { method: "POST", body: JSON.stringify(body) });
 }
 
