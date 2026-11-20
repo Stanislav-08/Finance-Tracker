@@ -40,7 +40,7 @@ export default function TransactionsTable({ full = false }: { full?: boolean }) 
   const shown = useMemo(() => {
     const list = txs.filter((t) =>
       (typeF === "all" || t.type === typeF) &&
-      `${t.merchant ?? ""} ${t.description ?? ""} ${cats[t.categoryId] ?? ""}`.toLowerCase().includes(q.toLowerCase()));
+      `${t.merchant ?? ""} ${t.description ?? ""} ${t.categoryId ? (cats[t.categoryId] ?? "") : "Other"}`.toLowerCase().includes(q.toLowerCase()));
     return full ? list : list.slice(0, 6);
   }, [txs, q, typeF, cats, full]);
 
@@ -52,7 +52,7 @@ export default function TransactionsTable({ full = false }: { full?: boolean }) 
 
   function exportCsv() {
     const rows = [["Date", "Type", "Category", "Account", "Merchant", "Description", "Amount"],
-      ...shown.map((t) => [t.date.slice(0, 10), t.type, cats[t.categoryId] ?? "", accs[t.accountId]?.name ?? "", t.merchant ?? "", t.description ?? "", Number(t.amount).toFixed(2)])];
+      ...shown.map((t) => [t.date.slice(0, 10), t.type, t.categoryId ? (cats[t.categoryId] ?? "") : "Other", accs[t.accountId]?.name ?? "", t.merchant ?? "", t.description ?? "", Number(t.amount).toFixed(2)])];
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
@@ -94,7 +94,7 @@ export default function TransactionsTable({ full = false }: { full?: boolean }) 
                   </div>
                 </div>
                 <div className="tx-cat">
-                  {t.categoryId ? <><span>{EMOJI[t.categoryId] ?? "🏷️"}</span> {cats[t.categoryId] ?? "Category"}</> : <span className="tx-muted">—</span>}
+                  {t.categoryId ? <><span>{EMOJI[t.categoryId] ?? "🏷️"}</span> {cats[t.categoryId] ?? "Category"}</> : <><span>📦</span> Other</>}
                 </div>
                 <div className="tx-acc">
                   {acc ? <><span className="tx-acc-badge">{acc.name.charAt(0).toUpperCase()}</span> {acc.name}</> : <span className="tx-muted">—</span>}

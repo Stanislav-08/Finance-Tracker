@@ -21,7 +21,7 @@ export function expensesByCategory(txs: Tx[], names: Record<string, string>, mon
     const k = t.categoryId ?? "none";
     totals[k] = (totals[k] ?? 0) + Number(t.amount);
   });
-  return Object.entries(totals).map(([id, value]) => ({ id, name: names[id] ?? "Uncategorized", value }));
+  return Object.entries(totals).map(([id, value]) => ({ id, name: names[id] ?? "Other", value }));
 }
 
 export const fmtPct = (n: number) => (n > 0 ? `+${n}%` : `${n}%`);

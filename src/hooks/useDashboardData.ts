@@ -69,8 +69,11 @@ export function useDashboardData() {
         const expenseNow = sum("expense", startThis, Infinity);
         setIncome(incomeNow);
         setExpenses(expenseNow);
-        setIncomeChange(pct(incomeNow, sum("income", startPrev, startThis)));
-        setExpenseChange(pct(expenseNow, sum("expense", startPrev, startThis)));
+        // Compare like with like: this month so far vs the same stretch of last month
+        // (otherwise a half-finished month always looks like a big drop).
+        const samePoint = Math.min(startPrev + (now.getTime() - startThis), startThis);
+        setIncomeChange(pct(incomeNow, sum("income", startPrev, samePoint)));
+        setExpenseChange(pct(expenseNow, sum("expense", startPrev, samePoint)));
 
         // Balance at the end of last month = balance now minus this month's net movement.
         const hasHistory = transactions.some((x: Transaction) => new Date(x.date).getTime() < startThis);
