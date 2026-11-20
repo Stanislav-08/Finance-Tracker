@@ -88,3 +88,8 @@ button{font:inherit;cursor:pointer}.auth-button,.finish-button,.add-goal,.btn{ba
   .tx-row.tx-full{grid-template-columns:minmax(0,1fr) auto 28px}
   .tx-acc{display:none}.tx-cat{grid-column:1/-1;order:3;font-size:.8rem;color:var(--muted)}
 }
+
+/* ===== Dashboard percentages ===== */
+.percentage-box.up{background:rgba(22,163,74,.14);color:var(--green)}
+.percentage-box.down{background:rgba(220,38,38,.14);color:var(--red)}
+.percentage-box.zero{background:var(--bg);color:var(--muted)}

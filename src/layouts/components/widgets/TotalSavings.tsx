@@ -15,9 +15,9 @@ function TotalSavings() {
             </p>
 
             <div className="card-box">
-              <div className="percentage-box">
+              <div className="percentage-box zero">
                 <span className="card-percentage">
-                  2%
+                  0%
                 </span>
               </div>
 

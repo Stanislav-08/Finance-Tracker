@@ -1,4 +1,5 @@
 import "./Widgets.css"
+import { fmtPct, pctClass } from "../../../lib/stats";
 import { useDashboardData } from "../../../hooks/useDashboardData";
 
 function Income() {
@@ -15,9 +16,9 @@ function Income() {
             </p>
 
             <div className="card-box">
-              <div className="percentage-box">
+              <div className={`percentage-box ${pctClass(incomeChange)}`}>
                 <span className="card-percentage">
-                  {incomeChange}%
+                  {fmtPct(incomeChange)}
                 </span>
               </div>
 

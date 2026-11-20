@@ -1,8 +1,9 @@
 import "./Widgets.css"
+import { fmtPct, pctClass } from "../../../lib/stats";
 import { useDashboardData } from "../../../hooks/useDashboardData";
 
 function TotalBalance() {
-    const { totalBalance } = useDashboardData();
+    const { totalBalance, balanceChange } = useDashboardData();
 
   return (
   <div className="total-balance widget">
@@ -15,9 +16,9 @@ function TotalBalance() {
             </p>
 
             <div className="card-box">
-              <div className="percentage-box">
+              <div className={`percentage-box ${pctClass(balanceChange)}`}>
                 <span className="card-percentage">
-                  11%
+                  {fmtPct(balanceChange)}
                 </span>
               </div>
 

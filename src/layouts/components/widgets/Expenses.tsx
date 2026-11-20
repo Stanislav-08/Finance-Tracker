@@ -1,4 +1,5 @@
 import "./Widgets.css"
+import { fmtPct } from "../../../lib/stats";
 import { useDashboardData } from "../../../hooks/useDashboardData";
 
 function Expenses() {
@@ -10,14 +11,14 @@ function Expenses() {
               Expenses
             </h2>
 
-            <p className="card-value">
+            <p className="card-value expense">
               €{expenses.toFixed(2)}
             </p>
 
             <div className="card-box">
-              <div className="percentage-box">
+              <div className="percentage-box down">
                 <span className="card-percentage">
-                  {expenseChange}%
+                  {fmtPct(expenseChange)}
                 </span>
               </div>
 

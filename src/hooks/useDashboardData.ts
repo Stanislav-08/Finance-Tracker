@@ -24,6 +24,7 @@ export function useDashboardData() {
   const [expenses, setExpenses] = useState(0);
   const [incomeChange, setIncomeChange] = useState(0);
   const [expenseChange, setExpenseChange] = useState(0);
+  const [balanceChange, setBalanceChange] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,41 +52,31 @@ export function useDashboardData() {
         setTotalSavings(Number(savings));
         setMonthlyContribution(Number(contribution));
 
-        const totalIncome = transactions
-          .filter(
-            (transaction: Transaction) =>
-              transaction.type === "income"
-          )
-          .reduce(
-            (total: number, transaction: Transaction) =>
-              total + Number(transaction.amount),
-            0
-          );
-
-        const totalExpenses = transactions
-          .filter(
-            (transaction: Transaction) =>
-              transaction.type === "expense"
-          )
-          .reduce(
-            (total: number, transaction: Transaction) =>
-              total + Number(transaction.amount),
-            0
-          );
-
         const now = new Date();
-        const sum = (t: string, off: number) => transactions
-          .filter((x: Transaction) => {
-            const d = new Date(x.date);
-            const ref = new Date(now.getFullYear(), now.getMonth() - off, 1);
-            return x.type === t && d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
-          })
-          .reduce((a: number, x: Transaction) => a + Number(x.amount), 0);
-        const pct = (c: number, p: number) => (p > 0 ? Math.round(((c - p) / p) * 100) : 0);
-        setIncomeChange(pct(sum("income", 0), sum("income", 1)));
-        setExpenseChange(pct(sum("expense", 0), sum("expense", 1)));
-        setIncome(totalIncome);
-        setExpenses(totalExpenses);
+        const startThis = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const startPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+        const sum = (type: string, from: number, to: number) =>
+          transactions
+            .filter((x: Transaction) => {
+              const t = new Date(x.date).getTime();
+              return x.type === type && t >= from && t < to;
+            })
+            .reduce((acc: number, x: Transaction) => acc + Number(x.amount), 0);
+        // No data last month (previous = 0) -> leave 0%.
+        const pct = (cur: number, prev: number) => (prev > 0 ? Math.round(((cur - prev) / prev) * 100) : 0);
+
+        const incomeNow = sum("income", startThis, Infinity);
+        const expenseNow = sum("expense", startThis, Infinity);
+        setIncome(incomeNow);
+        setExpenses(expenseNow);
+        setIncomeChange(pct(incomeNow, sum("income", startPrev, startThis)));
+        setExpenseChange(pct(expenseNow, sum("expense", startPrev, startThis)));
+
+        // Balance at the end of last month = balance now minus this month's net movement.
+        const hasHistory = transactions.some((x: Transaction) => new Date(x.date).getTime() < startThis);
+        const bal = Number(balance);
+        const prevBal = bal - (incomeNow - expenseNow);
+        setBalanceChange(hasHistory && prevBal !== 0 ? Math.round(((bal - prevBal) / Math.abs(prevBal)) * 100) : 0);
       } catch (error) {
         console.error(
           "Failed to load dashboard data:",
@@ -107,6 +98,7 @@ export function useDashboardData() {
     expenses,
     incomeChange,
     expenseChange,
+    balanceChange,
     loading,
   };
 }
