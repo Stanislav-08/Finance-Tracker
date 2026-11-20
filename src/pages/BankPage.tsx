@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-import { fmtDateTime } from "../lib/prefs";
   getBankConnections, getBankCredentials, getBanks, removeBankCredentials,
   saveBankCredentials, startBankConnect, syncBanks,
 } from "../services/accountService";
+import { fmtDateTime } from "../lib/prefs";
 
 const COUNTRIES = ["BG", "DE", "FR", "ES", "IT", "NL", "AT", "FI", "SE", "PL", "RO", "GR"];
 
