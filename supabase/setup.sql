@@ -302,3 +302,23 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Account_one_main_per_user" ON "Account"("user
 
 ALTER TABLE "BankConnection" ADD COLUMN IF NOT EXISTS "balance" NUMERIC(65,30) NOT NULL DEFAULT 0;
 ALTER TABLE "BankConnection" ADD COLUMN IF NOT EXISTS "label"   TEXT;
+
+-- ---------- POCKET MONEY (cash spending log, no balance) ----------
+INSERT INTO "Category" ("id","name","type") VALUES
+  ('cat_snacks','Snacks & drinks','expense'),
+  ('cat_games','Games & apps','expense'),
+  ('cat_clothes','Clothes','expense')
+ON CONFLICT ("id") DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS "PocketExpense" (
+  "id"         TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+  "userId"     TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+  "amount"     DECIMAL(65,30) NOT NULL CHECK ("amount" > 0),
+  "categoryId" TEXT REFERENCES "Category"("id") ON DELETE SET NULL,
+  "note"       TEXT,
+  "date"       TIMESTAMP(3) NOT NULL,
+  "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "PocketExpense_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "PocketExpense_user_date_idx" ON "PocketExpense"("userId","date" DESC);
+ALTER TABLE "PocketExpense" ENABLE ROW LEVEL SECURITY;  -- server only

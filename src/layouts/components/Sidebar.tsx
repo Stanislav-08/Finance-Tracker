@@ -5,7 +5,7 @@ import "./Sidebar.css";
 
 const links = [
   ["/dashboard", "Dashboard", "dashboard"], ["/transactions", "Transactions", "transactions"],
-  ["/wallet", "Wallet", "wallet"], ["/goals", "Goals", "goals"], ["/budget", "Budget", "budget"],
+  ["/wallet", "Wallet", "wallet"], ["/pocket", "Pocket money", "transactions"], ["/goals", "Goals", "goals"], ["/budget", "Budget", "budget"],
   ["/bank", "Bank sync", "wallet"], ["/subscriptions", "Subscriptions", "calendar"], ["/analytics", "Analytics", "analytics"], ["/settings", "Settings", "settings"],
 ];
 

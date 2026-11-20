@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import accountRoutes from "./routes/accountRoutes.js";
 import bankingRouter from "./routes/banking.js";
+import pocketRouter from "./routes/pocketRoutes.js";
 import openBankingRouter, { syncAllUsers } from "./routes/openBanking.js";
 
 const app = express();
@@ -28,6 +29,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/banking", bankingRouter);
 app.use("/api/open-banking", openBankingRouter);
+app.use("/api/pocket", pocketRouter);
 
 // Vercel Cron (twice a day, see vercel.json). Vercel sends "Authorization: Bearer $CRON_SECRET".
 app.get("/api/cron/sync", async (req, res) => {

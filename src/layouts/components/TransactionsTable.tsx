@@ -3,7 +3,8 @@ import { supabase } from "../../lib/supabase";
 import { deleteTransaction, getAccounts, getCategories, getTransactions } from "../../services/accountService";
 import "./TransactionsTable.css";
 
-const EMOJI: Record<string, string> = {
+export const EMOJI: Record<string, string> = {
+  cat_snacks: "🍫", cat_games: "🎮", cat_clothes: "👕",
   cat_salary: "💼", cat_freelance: "💻", cat_investments: "📈", cat_gifts_in: "🎁", cat_other_income: "💰",
   cat_groceries: "🛒", cat_rent: "🏠", cat_transport: "🚗", cat_dining: "🍽️", cat_shopping: "🛍️",
   cat_entertainment: "🎬", cat_health: "🩺", cat_education: "🎓", cat_travel: "✈️", cat_subscriptions: "💳", cat_other_expense: "🧾",

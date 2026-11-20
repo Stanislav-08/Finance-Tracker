@@ -265,6 +265,17 @@ export async function prefetchAll(userId: string) {
     getSavingsGoals(userId), getSubscriptions(userId),
     getTotalBalance(userId), getTotalSavings(userId), getMonthlyContribution(userId),
     getBudgets(userId, now.getMonth() + 1, now.getFullYear()),
-    getBankCredentials(), getBankConnections(),
+    getBankCredentials(), getBankConnections(), getPocket(userId),
   ]);
 }
+
+export interface PocketItem { id: string; amount: number; categoryId: string | null; note: string | null; date: string }
+
+export const getPocket = async (userId: string) =>
+  (await request<{ items: PocketItem[] }>(`/api/pocket/${userId}`, "Failed to load pocket spending")).items;
+
+export const addPocket = (userId: string, body: { amount: number; categoryId?: string; note?: string; date: string }) =>
+  request(`/api/pocket/${userId}`, "Failed to save", { method: "POST", body: JSON.stringify(body) });
+
+export const deletePocket = (userId: string, id: string) =>
+  request(`/api/pocket/${userId}/${id}`, "Failed to delete", { method: "DELETE" });
