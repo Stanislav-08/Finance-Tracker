@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { resolvedTheme, setPrefs, usePrefs } from "../../lib/prefs";
 import { supabase } from "../../lib/supabase";
 import "./Sidebar.css";
 
@@ -10,13 +10,9 @@ const links = [
 ];
 
 export default function Sidebar() {
-  const [theme, setTheme] = useState(document.documentElement.dataset.theme ?? "light");
-  function toggle() {
-    const next = theme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem("theme", next); } catch { /* ignore */ }
-    setTheme(next);
-  }
+  usePrefs();
+  const theme = resolvedTheme();
+  const toggle = () => setPrefs({ theme: theme === "dark" ? "light" : "dark" });
   return (
     <aside className="sidebar">
       <div className="sidebar-logo"><h2>Finance Tracker</h2></div>

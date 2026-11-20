@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import {
+import { todayISO } from "../../lib/prefs";
   createTransaction,
   getAccounts,
   getCategories,
@@ -21,7 +22,7 @@ export default function AddTransactionForm({ onCreated }: Props) {
   const [amount, setAmount] = useState("");
   const [merchant, setMerchant] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayISO());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 

@@ -2,6 +2,7 @@ import "./AllGoalsPage.css";
 import { useEffect, useState } from "react";
 import { depositToGoal, getSavingsGoals } from "../services/accountService";
 import { supabase } from "../lib/supabase";
+import { fmtDate } from "../lib/prefs";
 
 interface SavingsGoal {
   id: string;
@@ -121,9 +122,7 @@ function AllGoalsPage() {
                   <button onClick={() => deposit(goal.id)}>Add money</button>
                   <span>
                     {goal.deadline
-                      ? new Date(
-                          goal.deadline
-                        ).toLocaleDateString()
+                      ? fmtDate(goal.deadline)
                       : "No deadline"}
                   </span>
                 </div>

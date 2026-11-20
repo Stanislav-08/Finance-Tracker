@@ -4,11 +4,12 @@ import { supabase } from "../lib/supabase";
 import { addPocket, deletePocket, getCategories, getPocket, type CategoryItem, type PocketItem } from "../services/accountService";
 import { EMOJI } from "../layouts/components/TransactionsTable";
 import { fmtPct, pctClass } from "../lib/stats";
+import { fmtDate, todayISO } from "../lib/prefs";
 
 const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#a855f7", "#ec4899", "#84cc16"];
 const DAY = 864e5;
 const eur = (n: number) => `€${n.toFixed(2)}`;
-const today = () => new Date().toISOString().slice(0, 10);
+const today = todayISO;
 
 export default function PocketPage() {
   const [uid, setUid] = useState("");
@@ -112,7 +113,7 @@ export default function PocketPage() {
             <thead><tr><th>Date</th><th>Category</th><th>Note</th><th>Amount</th><th /></tr></thead>
             <tbody>{items.slice(0, 30).map((i) => (
               <tr key={i.id}>
-                <td>{new Date(i.date).toLocaleDateString()}</td>
+                <td>{fmtDate(i.date)}</td>
                 <td>{i.categoryId ? `${EMOJI[i.categoryId] ?? "🏷️"} ${names[i.categoryId] ?? ""}` : "📦 Other"}</td>
                 <td>{i.note ?? ""}</td>
                 <td className="expense">−{eur(i.amount)}</td>

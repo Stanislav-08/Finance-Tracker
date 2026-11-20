@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { deleteTransaction, getAccounts, getCategories, getTransactions } from "../../services/accountService";
 import "./TransactionsTable.css";
+import { fmtDate } from "../../lib/prefs";
 
 export const EMOJI: Record<string, string> = {
   cat_snacks: "🍫", cat_games: "🎮", cat_clothes: "👕",
@@ -91,7 +92,7 @@ export default function TransactionsTable({ full = false }: { full?: boolean }) 
                     <div className="tx-title">
                       {income && t.merchant ? <><span className="tx-muted">Received from </span>{name}</> : name}
                     </div>
-                    <div className="tx-sub">{new Date(t.date).toLocaleDateString()}</div>
+                    <div className="tx-sub">{fmtDate(t.date)}</div>
                   </div>
                 </div>
                 <div className="tx-cat">

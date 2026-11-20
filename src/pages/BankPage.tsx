@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+import { fmtDateTime } from "../lib/prefs";
   getBankConnections, getBankCredentials, getBanks, removeBankCredentials,
   saveBankCredentials, startBankConnect, syncBanks,
 } from "../services/accountService";
@@ -133,7 +134,7 @@ export default function BankPage() {
                 <tr key={c.id}>
                   <td>{c.name}</td>
                   <td>{c.currency} {Number(c.balance).toFixed(2)}</td>
-                  <td>{c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString() : "never"}</td>
+                  <td>{c.lastSyncedAt ? fmtDateTime(c.lastSyncedAt) : "never"}</td>
                 </tr>
               ))}
             </tbody>

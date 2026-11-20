@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { detectRecurring } from "../lib/recurring";
 import { createSubscription, deleteSubscription, getSubscriptions, getTransactions } from "../services/accountService";
+import { fmtDate, todayISO } from "../lib/prefs";
 
 // A trial counts until its end date (stored as the next payment date); after that it is a normal subscription.
 const isTrial = (s: any) => s.status === "trial" && new Date(s.nextPaymentDate).getTime() > Date.now();
@@ -11,7 +12,7 @@ export default function SubscriptionsPage() {
   const [subs, setSubs] = useState<any[]>([]);
   const [uid, setUid] = useState("");
   const [txs, setTxs] = useState<any[]>([]);
-  const [f, setF] = useState({ name: "", amount: "", billingCycle: "monthly", nextPaymentDate: new Date().toISOString().slice(0, 10), trial: false });
+  const [f, setF] = useState({ name: "", amount: "", billingCycle: "monthly", nextPaymentDate: todayISO(), trial: false });
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -60,7 +61,7 @@ export default function SubscriptionsPage() {
             <thead><tr><th>Name</th><th>Cycle</th><th>Charges seen</th><th>Next payment</th><th>Amount</th><th /></tr></thead>
             <tbody>{detected.map((d) => (
               <tr key={d.name}><td>{d.name}</td><td>{d.billingCycle}</td><td>{d.charges}</td>
-                <td>{new Date(d.nextPaymentDate).toLocaleDateString()}</td><td>€{d.amount.toFixed(2)}</td>
+                <td>{fmtDate(d.nextPaymentDate)}</td><td>€{d.amount.toFixed(2)}</td>
                 <td><button className="btn" onClick={async () => { await createSubscription(uid, { name: d.name, amount: d.amount, billingCycle: d.billingCycle, nextPaymentDate: d.nextPaymentDate }); load(); }}>Track</button></td></tr>
             ))}</tbody>
           </table>
@@ -73,7 +74,7 @@ export default function SubscriptionsPage() {
               <tr key={s.id}>
                 <td>{s.name}{isTrial(s) && <span className="percentage-box" style={{ marginLeft: 8 }}>Free trial</span>}</td>
                 <td>{s.billingCycle}</td>
-                <td>{new Date(s.nextPaymentDate).toLocaleDateString()}
+                <td>{fmtDate(s.nextPaymentDate)}
                   {isTrial(s) && <small style={{ marginLeft: 6, color: daysLeft(s) <= 3 ? "var(--red)" : "var(--muted)" }}>(trial ends in {daysLeft(s)} d)</small>}</td>
                 <td>€{Number(s.amount).toFixed(2)}</td>
                 <td><button className="btn-danger" onClick={async () => { await deleteSubscription(uid, s.id); load(); }}>Remove</button></td></tr>

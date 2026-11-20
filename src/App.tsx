@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
+import { initTheme, usePrefs } from "./lib/prefs";
 import { clearCache, prefetchAll } from "./services/accountService";
 import AppLayout from "./layouts/AppLayout";
 import AuthPage from "./pages/AuthPage";
@@ -19,13 +20,13 @@ import SettingsPage from "./pages/SettingsPage";
 import AddGoalPage from "./pages/AddGoalPage";
 import AllGoalsPage from "./pages/AllGoalsPage";
 
-const saved = (() => { try { return localStorage.getItem("theme"); } catch { return null; } })();
-document.documentElement.dataset.theme = saved ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+initTheme();
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
+  const prefs = usePrefs();
   const userId = session?.user.id;
 
   // Load all data once after login, so pages open instantly and fully populated.
@@ -49,7 +50,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
+      <Routes key={`${prefs.date}-${prefs.time}`}>
         {!session ? <Route path="*" element={<AuthPage />} /> : (
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
