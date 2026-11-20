@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
+import { clearCache, prefetchAll } from "./services/accountService";
 import AppLayout from "./layouts/AppLayout";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -23,14 +24,27 @@ document.documentElement.dataset.theme = saved ?? (matchMedia("(prefers-color-sc
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
+  const userId = session?.user.id;
+
+  // Load all data once after login, so pages open instantly and fully populated.
+  useEffect(() => {
+    if (!userId) { setReady(false); return; }
+    let cancelled = false;
+    prefetchAll(userId).finally(() => { if (!cancelled) setReady(true); });
+    return () => { cancelled = true; };
+  }, [userId]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setLoading(false); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (!s) clearCache();
+      setSession(s);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
+  if (loading || (session && !ready)) return <div className="page-loader"><div className="spinner" /></div>;
 
   return (
     <BrowserRouter>

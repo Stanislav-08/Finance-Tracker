@@ -17,7 +17,7 @@ async function authHeaders(): Promise<Record<string, string>> {
   };
 }
 
-async function request<T>(
+async function rawRequest<T>(
   path: string,
   errorMessage: string,
   init: RequestInit = {}
@@ -38,6 +38,35 @@ async function request<T>(
   }
 
   return response.json();
+}
+
+// ---- Response cache: GET results are reused when navigating between pages. ----
+// Any write (POST/PUT/DELETE) clears it, so data never goes stale after a change.
+const cache = new Map<string, { at: number; p: Promise<unknown> }>();
+const TTL = 5 * 60 * 1000;
+
+export const clearCache = () => cache.clear();
+
+async function request<T>(path: string, errorMessage: string, init: RequestInit = {}): Promise<T> {
+  const isGet = !init.method || init.method.toUpperCase() === "GET";
+
+  if (!isGet) {
+    const result = await rawRequest<T>(path, errorMessage, init);
+    cache.clear();
+    return result;
+  }
+
+  const hit = cache.get(path);
+  if (hit && Date.now() - hit.at < TTL) return structuredClone(await hit.p) as T;
+
+  const p = rawRequest<T>(path, errorMessage, init);
+  cache.set(path, { at: Date.now(), p });
+  try {
+    return structuredClone(await p) as T;
+  } catch (e) {
+    cache.delete(path);
+    throw e;
+  }
 }
 
 export async function getTotalBalance(userId: string) {
@@ -227,3 +256,15 @@ export const setAccountBalance = (userId: string, accountId: string, balance: nu
 
 export const transfer = (userId: string, fromId: string, toId: string, amount: number) =>
   request(`/api/accounts/transfers/${userId}`, "Failed to transfer", { method: "POST", body: JSON.stringify({ fromId, toId, amount }) });
+
+/** Loads everything the main pages need, in parallel, so the app opens fully loaded. */
+export async function prefetchAll(userId: string) {
+  const now = new Date();
+  await Promise.allSettled([
+    getTransactions(userId), getAccounts(userId), getCategories(userId),
+    getSavingsGoals(userId), getSubscriptions(userId),
+    getTotalBalance(userId), getTotalSavings(userId), getMonthlyContribution(userId),
+    getBudgets(userId, now.getMonth() + 1, now.getFullYear()),
+    getBankCredentials(), getBankConnections(),
+  ]);
+}
